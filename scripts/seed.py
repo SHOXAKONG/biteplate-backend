@@ -24,7 +24,7 @@ import asyncio
 import random
 import sys
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 
 from faker import Faker
@@ -154,7 +154,7 @@ async def seed_tables(session) -> list[TableModel]:
 
 async def seed_reservations(session, tables: list[TableModel]) -> int:
     print(f"Seeding {N_RESERVATIONS} reservations...")
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     for _ in range(N_RESERVATIONS):
         table = random.choice(tables)
         booking_time = now + timedelta(
@@ -295,7 +295,7 @@ async def main(clear: bool) -> None:
         tables = await seed_tables(session)
         await session.commit()
 
-        n_res = await seed_reservations(session, tables)
+        await seed_reservations(session, tables)
         await session.commit()
 
         n_ord, n_items, n_bills = await seed_orders_items_bills(session, tables, menu_items)
