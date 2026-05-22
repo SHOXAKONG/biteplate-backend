@@ -101,7 +101,22 @@ jobs:
           method: kubeconfig
           kubeconfig: ${{ secrets.KUBECONFIG }}
 
-      - name: Apply manifests
+      - name: Apply namespace first
+        run: kubectl apply -f k8s/00-namespace.yaml
+
+      - name: Create/refresh GHCR pull secret
+        env:
+          GHCR_USER: ${{ github.actor }}
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          kubectl -n biteplate create secret docker-registry ghcr-pull \
+            --docker-server=ghcr.io \
+            --docker-username="$GHCR_USER" \
+            --docker-password="$GHCR_TOKEN" \
+            --docker-email=ci@biteplate.local \
+            --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Apply remaining manifests
         run: kubectl apply -f k8s/
 
       - name: Roll out new images (must run BEFORE migrations so pods are healthy)
@@ -115,9 +130,9 @@ jobs:
             worker=${{ env.REGISTRY }}/${OWNER}/biteplate-worker:${TAG}
           kubectl -n biteplate set image deploy/biteplate-beat \
             beat=${{ env.REGISTRY }}/${OWNER}/biteplate-worker:${TAG}
-          kubectl -n biteplate rollout status deploy/biteplate-api    --timeout=300s
-          kubectl -n biteplate rollout status deploy/biteplate-worker --timeout=300s
-          kubectl -n biteplate rollout status deploy/biteplate-beat   --timeout=300s
+          kubectl -n biteplate rollout status deploy/biteplate-api    --timeout=600s
+          kubectl -n biteplate rollout status deploy/biteplate-worker --timeout=600s
+          kubectl -n biteplate rollout status deploy/biteplate-beat   --timeout=600s
 
       - name: Run alembic migrations (now api pod is up)
         run: kubectl -n biteplate exec deploy/biteplate-api -- alembic upgrade head

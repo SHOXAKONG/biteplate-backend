@@ -13,6 +13,8 @@ spec:
       labels:
         app: biteplate-api
     spec:
+      imagePullSecrets:
+        - name: ghcr-pull
       containers:
         - name: api
           image: ghcr.io/shoxakong/biteplate-backend:latest

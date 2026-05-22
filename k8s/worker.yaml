@@ -13,6 +13,8 @@ spec:
       labels:
         app: biteplate-worker
     spec:
+      imagePullSecrets:
+        - name: ghcr-pull
       containers:
         - name: worker
           image: ghcr.io/shoxakong/biteplate-worker:latest
@@ -46,6 +48,8 @@ spec:
       labels:
         app: biteplate-beat
     spec:
+      imagePullSecrets:
+        - name: ghcr-pull
       containers:
         - name: beat
           image: ghcr.io/shoxakong/biteplate-worker:latest
