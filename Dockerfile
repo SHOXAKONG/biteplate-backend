@@ -13,7 +13,7 @@ RUN apt-get update \
 RUN pip install --no-cache-dir uv
 
 COPY pyproject.toml ./
-RUN uv pip install --system --no-cache .
+RUN uv pip install --system --no-cache ".[seed]"
 
 COPY . .
 
