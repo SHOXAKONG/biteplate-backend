@@ -104,22 +104,11 @@ jobs:
       - name: Apply namespace first
         run: kubectl apply -f k8s/00-namespace.yaml
 
-      - name: Create/refresh GHCR pull secret
-        env:
-          GHCR_USER: ${{ github.actor }}
-          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          kubectl -n biteplate create secret docker-registry ghcr-pull \
-            --docker-server=ghcr.io \
-            --docker-username="$GHCR_USER" \
-            --docker-password="$GHCR_TOKEN" \
-            --docker-email=ci@biteplate.local \
-            --dry-run=client -o yaml | kubectl apply -f -
-
       - name: Apply remaining manifests
         run: kubectl apply -f k8s/
 
       - name: Roll out new images (must run BEFORE migrations so pods are healthy)
+        id: rollout
         env:
           TAG: ${{ needs.build-and-push.outputs.tag }}
           OWNER: ${{ needs.build-and-push.outputs.owner }}
@@ -133,6 +122,21 @@ jobs:
           kubectl -n biteplate rollout status deploy/biteplate-api    --timeout=600s
           kubectl -n biteplate rollout status deploy/biteplate-worker --timeout=600s
           kubectl -n biteplate rollout status deploy/biteplate-beat   --timeout=600s
+
+      - name: Debug on rollout failure
+        if: failure() && steps.rollout.outcome == 'failure'
+        run: |
+          echo "=== Pods ==="
+          kubectl -n biteplate get pods -o wide
+          echo
+          echo "=== Events (last 30) ==="
+          kubectl -n biteplate get events --sort-by=.lastTimestamp | tail -30
+          echo
+          echo "=== Describe failing pods ==="
+          for pod in $(kubectl -n biteplate get pods -o name | grep -E 'biteplate-(api|worker|beat)'); do
+            echo "--- $pod ---"
+            kubectl -n biteplate describe $pod | tail -25
+          done
 
       - name: Run alembic migrations (now api pod is up)
         run: kubectl -n biteplate exec deploy/biteplate-api -- alembic upgrade head
