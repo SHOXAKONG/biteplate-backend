@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: api
-          image: ghcr.io/REPLACE_OWNER/biteplate-backend:latest
+          image: ghcr.io/shoxakong/biteplate-backend:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 8000

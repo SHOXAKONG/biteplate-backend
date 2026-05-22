@@ -104,12 +104,7 @@ jobs:
       - name: Apply manifests
         run: kubectl apply -f k8s/
 
-      - name: Run alembic migrations
-        run: |
-          kubectl -n biteplate wait --for=condition=available --timeout=120s deployment/biteplate-api || true
-          kubectl -n biteplate exec deploy/biteplate-api -- alembic upgrade head
-
-      - name: Roll out new images
+      - name: Roll out new images (must run BEFORE migrations so pods are healthy)
         env:
           TAG: ${{ needs.build-and-push.outputs.tag }}
           OWNER: ${{ needs.build-and-push.outputs.owner }}
@@ -120,6 +115,9 @@ jobs:
             worker=${{ env.REGISTRY }}/${OWNER}/biteplate-worker:${TAG}
           kubectl -n biteplate set image deploy/biteplate-beat \
             beat=${{ env.REGISTRY }}/${OWNER}/biteplate-worker:${TAG}
-          kubectl -n biteplate rollout status deploy/biteplate-api    --timeout=180s
-          kubectl -n biteplate rollout status deploy/biteplate-worker --timeout=180s
-          kubectl -n biteplate rollout status deploy/biteplate-beat   --timeout=180s
+          kubectl -n biteplate rollout status deploy/biteplate-api    --timeout=300s
+          kubectl -n biteplate rollout status deploy/biteplate-worker --timeout=300s
+          kubectl -n biteplate rollout status deploy/biteplate-beat   --timeout=300s
+
+      - name: Run alembic migrations (now api pod is up)
+        run: kubectl -n biteplate exec deploy/biteplate-api -- alembic upgrade head

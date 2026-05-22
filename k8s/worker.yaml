@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: worker
-          image: ghcr.io/REPLACE_OWNER/biteplate-worker:latest
+          image: ghcr.io/shoxakong/biteplate-worker:latest
           imagePullPolicy: Always
           args: ["worker"]
           envFrom:
@@ -48,7 +48,7 @@ spec:
     spec:
       containers:
         - name: beat
-          image: ghcr.io/REPLACE_OWNER/biteplate-worker:latest
+          image: ghcr.io/shoxakong/biteplate-worker:latest
           imagePullPolicy: Always
           args: ["beat"]
           envFrom:
