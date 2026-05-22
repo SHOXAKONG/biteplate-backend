@@ -9,8 +9,9 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_API: ${{ github.repository_owner }}/biteplate-backend
-  IMAGE_WORKER: ${{ github.repository_owner }}/biteplate-worker
+  # GHCR requires lowercase image names. github.repository_owner preserves the
+  # case of the GitHub handle, so we lowercase it in a step below and reference
+  # ${{ steps.owner.outputs.lc }} when tagging images.
 
 jobs:
   lint-test:
@@ -45,8 +46,15 @@ jobs:
       packages: write
     outputs:
       tag: ${{ steps.meta.outputs.tag }}
+      owner: ${{ steps.owner.outputs.lc }}
     steps:
       - uses: actions/checkout@v4
+
+      - name: Lowercase repo owner (GHCR requires lowercase)
+        id: owner
+        run: echo "lc=${OWNER,,}" >> $GITHUB_OUTPUT
+        env:
+          OWNER: ${{ github.repository_owner }}
 
       - name: Set image tag
         id: meta
@@ -67,8 +75,8 @@ jobs:
           file: Dockerfile
           push: true
           tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_API }}:${{ steps.meta.outputs.tag }}
-            ${{ env.REGISTRY }}/${{ env.IMAGE_API }}:latest
+            ${{ env.REGISTRY }}/${{ steps.owner.outputs.lc }}/biteplate-backend:${{ steps.meta.outputs.tag }}
+            ${{ env.REGISTRY }}/${{ steps.owner.outputs.lc }}/biteplate-backend:latest
 
       - name: Build & push Worker
         uses: docker/build-push-action@v5
@@ -77,8 +85,8 @@ jobs:
           file: Dockerfile.worker
           push: true
           tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_WORKER }}:${{ steps.meta.outputs.tag }}
-            ${{ env.REGISTRY }}/${{ env.IMAGE_WORKER }}:latest
+            ${{ env.REGISTRY }}/${{ steps.owner.outputs.lc }}/biteplate-worker:${{ steps.meta.outputs.tag }}
+            ${{ env.REGISTRY }}/${{ steps.owner.outputs.lc }}/biteplate-worker:latest
 
   deploy:
     name: Deploy to K8s
@@ -104,13 +112,14 @@ jobs:
       - name: Roll out new images
         env:
           TAG: ${{ needs.build-and-push.outputs.tag }}
+          OWNER: ${{ needs.build-and-push.outputs.owner }}
         run: |
           kubectl -n biteplate set image deploy/biteplate-api \
-            api=${{ env.REGISTRY }}/${{ env.IMAGE_API }}:${TAG}
+            api=${{ env.REGISTRY }}/${OWNER}/biteplate-backend:${TAG}
           kubectl -n biteplate set image deploy/biteplate-worker \
-            worker=${{ env.REGISTRY }}/${{ env.IMAGE_WORKER }}:${TAG}
+            worker=${{ env.REGISTRY }}/${OWNER}/biteplate-worker:${TAG}
           kubectl -n biteplate set image deploy/biteplate-beat \
-            beat=${{ env.REGISTRY }}/${{ env.IMAGE_WORKER }}:${TAG}
+            beat=${{ env.REGISTRY }}/${OWNER}/biteplate-worker:${TAG}
           kubectl -n biteplate rollout status deploy/biteplate-api    --timeout=180s
           kubectl -n biteplate rollout status deploy/biteplate-worker --timeout=180s
           kubectl -n biteplate rollout status deploy/biteplate-beat   --timeout=180s
