@@ -74,10 +74,10 @@ spec:
   ingressClassName: traefik
   tls:
     - hosts:
-        - api.biteplate.example
+        - api.62.113.58.138.nip.io
       secretName: api-biteplate-tls
   rules:
-    - host: api.biteplate.example
+    - host: api.62.113.58.138.nip.io
       http:
         paths:
           - path: /
