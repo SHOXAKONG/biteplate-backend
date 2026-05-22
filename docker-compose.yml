@@ -1,0 +1,81 @@
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: biteplate-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - biteplate
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: biteplate-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - biteplate
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: biteplate-backend:local
+    container_name: biteplate-api
+    env_file: .env
+    ports:
+      - "8000:8000"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - biteplate
+      - biteplate-auth
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    image: biteplate-worker:local
+    container_name: biteplate-worker
+    command: ["worker"]
+    env_file: .env
+    depends_on:
+      - rabbitmq
+      - redis
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - biteplate
+
+  beat:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    image: biteplate-worker:local
+    container_name: biteplate-beat
+    command: ["beat"]
+    env_file: .env
+    depends_on:
+      - rabbitmq
+      - redis
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - biteplate
+
+networks:
+  biteplate:
+    driver: bridge
+  biteplate-auth:
+    external: true
+    name: biteplate-auth

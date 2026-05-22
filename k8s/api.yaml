@@ -1,0 +1,84 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: biteplate-api
+  namespace: biteplate
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: biteplate-api
+  template:
+    metadata:
+      labels:
+        app: biteplate-api
+    spec:
+      containers:
+        - name: api
+          image: ghcr.io/REPLACE_OWNER/biteplate-backend:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: biteplate-config
+            - secretRef:
+                name: biteplate-secrets
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "1000m"
+              memory: "512Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: biteplate-api
+  namespace: biteplate
+spec:
+  selector:
+    app: biteplate-api
+  ports:
+    - port: 80
+      targetPort: 8000
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: biteplate-api
+  namespace: biteplate
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    traefik.ingress.kubernetes.io/router.tls: "true"
+spec:
+  ingressClassName: traefik
+  tls:
+    - hosts:
+        - api.biteplate.example
+      secretName: api-biteplate-tls
+  rules:
+    - host: api.biteplate.example
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: biteplate-api
+                port:
+                  number: 80

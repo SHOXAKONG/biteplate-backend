@@ -1,0 +1,29 @@
+# Local-development overlay. Adds Postgres so you don't need to run a DB yourself.
+# Production deployment ignores this file (DB stays external as configured).
+#
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build
+#
+# Or, easier, from the project root:
+#
+#   make dev
+
+services:
+  api:
+    env_file: .env.dev
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  worker:
+    env_file: .env.dev
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+
+  beat:
+    env_file: .env.dev
+    depends_on:
+      rabbitmq:
+        condition: service_healthy

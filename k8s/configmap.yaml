@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: biteplate-config
+  namespace: biteplate
+data:
+  ENVIRONMENT: "production"
+  LOG_LEVEL: "INFO"
+  KEYCLOAK_SERVER_URL: "http://keycloak.biteplate-auth.svc.cluster.local:8080"
+  KEYCLOAK_REALM: "biteplate"
+  KEYCLOAK_CLIENT_ID: "biteplate-backend"
+  KEYCLOAK_AUDIENCE: "biteplate-backend"
+  CELERY_BROKER_URL: "amqp://guest:guest@rabbitmq:5672//"
+  CELERY_RESULT_BACKEND: "redis://redis:6379/0"
+  # DATABASE_URL / SYNC_DATABASE_URL come from the Secret (external DB host).
+  LOCATION_CODE: "STANDARD"
+  CORS_ORIGINS: "https://app.biteplate.example"

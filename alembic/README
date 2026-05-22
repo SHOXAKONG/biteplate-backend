@@ -1,0 +1,7 @@
+Alembic migrations for BitePlate.
+
+Create a new revision:
+  alembic revision --autogenerate -m "describe change"
+
+Apply:
+  alembic upgrade head
