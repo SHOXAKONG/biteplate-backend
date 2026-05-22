@@ -33,15 +33,33 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
 include = ["app*"]
-exclude = ["alembic*", "tests*", "k8s*"]
+exclude = ["alembic*", "tests*", "k8s*", "build*"]
 
 [tool.ruff]
 line-length = 100
 target-version = "py312"
+extend-exclude = [
+    "build",
+    "dist",
+    ".venv",
+    "alembic",  # migration templates — not worth churning
+]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP"]
-ignore = ["E501"]
+ignore = [
+    "E501",  # line length — handled by formatter
+    "B008",  # function call in defaults — intentional for FastAPI Depends/Query
+    "UP037", # quoted forward references — needed for SQLAlchemy self-refs
+    "UP046", # PEP 695 generic syntax — keep classic Generic[T] for clarity
+]
+
+[tool.ruff.lint.per-file-ignores]
+# SQLAlchemy models use string forward refs that pyflakes can't resolve at lint time.
+"app/models/order.py" = ["F821"]
+"app/models/order_item.py" = ["F821"]
+"alembic/env.py" = ["I001"]
+"tests/*" = ["B009", "B010"]  # getattr/setattr in tests is fine for clarity
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

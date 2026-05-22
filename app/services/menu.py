@@ -12,7 +12,6 @@ from app.dto.menu import DecoratorSpecDTO, MenuItemCreateDTO, MenuItemDTO, Price
 from app.models.menu_item import MenuItemModel
 from app.repositories.menu import MenuRepository
 
-
 # ---------- Composite ----------
 
 class MenuItem(ABC):

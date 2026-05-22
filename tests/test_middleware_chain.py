@@ -2,9 +2,7 @@
 
 import asyncio
 from types import SimpleNamespace
-from unittest.mock import AsyncMock
 
-import pytest
 from starlette.responses import JSONResponse, Response
 
 from app.core.middleware import (
