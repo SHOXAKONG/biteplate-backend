@@ -14,4 +14,4 @@ data:
   CELERY_RESULT_BACKEND: "redis://redis:6379/0"
   # DATABASE_URL / SYNC_DATABASE_URL come from the Secret (external DB host).
   LOCATION_CODE: "STANDARD"
-  CORS_ORIGINS: "https://app.62.113.58.138.nip.io,http://localhost:3000"
+  CORS_ORIGINS: "https://app.62.113.58.145.nip.io,http://localhost:3000"
